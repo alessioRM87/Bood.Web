@@ -1,0 +1,202 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js" integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js" integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ" crossorigin="anonymous"></script>
+    <meta charset="utf-8" />
+    <title></title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+    <script>
+        $(document).ready(function () {
+
+            var baseURL = "https://alessioiannella-eval-test.apigee.net/comp-306-api/api";
+            //var baseURL = "http://localhost:17854/api";
+            //var baseURL = "https://assignment1-179919.appspot.com/api";
+
+            $("#buttonSearch").click(function () {
+                var searchValue = $("#inputSearch").val();
+
+                console.log("Search value: " + searchValue);
+
+                window.location.href = "searchResults.html?value=" + searchValue;
+            });
+
+            console.log("Cookie: ", document.cookie);
+
+            var username = parseCookie("username", document.cookie);
+            var userID = parseCookie("userID", document.cookie);
+
+            var book = null;
+
+            if (username == "") {
+                window.location.href = "index.html";
+            }
+            else {
+
+                var value = parseQueryString("value");
+
+                document.getElementById("welcome").innerHTML = "Welcome, " + username;
+
+
+                $("#buttonLogout").click(function () {
+                    var curCookie = "username=" +
+                        ", userID=" +
+                        ", sessionID=" +
+                        ", expires=" +
+                        ", path=" +
+                        ", domain=";
+
+                    document.cookie = curCookie;
+                    window.location.href = "index.html";
+                });
+
+                $.ajax({
+                    url: baseURL + '/moods',
+                    type: 'get',
+                    contentType: 'application/json; charset=UTF-8',
+                    success: function (data, textStatus, jQxhr) {
+
+                        console.log(data);
+
+                        for (var i = 0; i < data.length; i++) {
+                            var button = "<button class=\"dropdown-item\" onclick=\"searchMood(\'" + baseURL + "\', \'" + data[i].moodID + "\')\">" + data[i].name + "</button>";
+                            console.log(button);
+                            $("#moodsNav").append(button);
+                        }
+                    },
+                    error: function (jqXhr, textStatus, errorThrown) {
+                        console.log(errorThrown);
+                        console.log(jqXhr.responseJSON.error);
+                    }
+                });
+
+                $.ajax({
+                    url: baseURL + "/books/search",
+                    type: 'post',
+                    contentType: 'application/json; charset=UTF-8',
+                    data: JSON.stringify({ "value": value }),
+                    success: function (data, textStatus, jQxhr) {
+                        console.log(data);
+
+                        var grid = "";
+
+                        for (var i = 0; i < data.length; i = i + 3) {
+
+                            grid += "<div class=\"row\">";
+
+                            for (var j = 0; j < 3; j++) {
+
+                                if (data[i + j] != null) {
+
+                                    grid += "<div class=\"col-sm-4\"><div class=\"card\"><a href=\"details.html?bookID=" + data[i + j].bookID + "\" class=\"card-block card-link\">";
+                                    grid += "<img style=\"width: 100%\" src=\"" + data[i + j].imageURL + "\" alt=\"Image result for book image placeholder\" />";
+                                    grid += "<h3 class=\"card-title\">" + data[i + j].title + "</h3>";
+                                    grid += "<p class=\"card-text\">" + data[i + j].author + "</p></a></div></div>";
+                                }
+
+
+                            }
+
+                            grid += "</div>";
+                        }
+
+                        $("#list").append(grid);
+
+
+                    },
+                    error: function (jqXhr, textStatus, errorThrown) {
+                        console.log(errorThrown);
+                        console.log(jqXhr.responseJSON.error);
+                    }
+                });
+
+
+
+            }
+        });
+
+        function searchMood(baseURL, moodID) {
+            console.log("Clicked mood " + moodID);
+
+            window.location.href = "moodsResults.html?moodID=" + moodID;
+        }
+
+        function parseQueryString(name) {
+            var url = window.location.href;
+            name = name.replace(/[\[\]]/g, "\\$&");
+            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+        }
+
+        function parseCookie(cname, cookie) {
+            var name = cname + "=";
+
+            var sections = cookie.split(', ');
+
+            for (var i = 0; i < sections.length; i++) {
+                if (sections[i].startsWith(cname)) {
+                    var value = sections[i].split('=')[1];
+                    console.log("Value for cookie " + name + ": " + value);
+                    return value;
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+        <a class="navbar-brand" href="#">BOOD</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="home.html">Home <span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="upload.html">Upload new Book <span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" id="dropdownNavMood" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Moods</a>
+                    <div id="moodsNav" class="dropdown-menu" aria-labelledby="dropdown01">
+
+                    </div>
+                </li>
+                <li>
+                    <input id="inputSearch" class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
+                </li>
+                <li>
+                    <button id="buttonSearch" class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>=
+                </li>
+            </ul>
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a id="welcome" class="nav-link" href="#"><span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item active">
+                    <a id="buttonLogout" class="nav-link" href="#">Logout<span class="sr-only">(current)</span></a>
+                </li>
+            </ul>
+
+
+        </div>
+    </nav>
+
+    <main role="main" class="container">
+
+        <div id="list">
+
+        </div>
+
+    </main>
+
+</body>
+</html>

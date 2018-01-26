@@ -1,0 +1,200 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js" integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js" integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ" crossorigin="anonymous"></script>
+    <meta charset="utf-8" />
+    <title></title>
+    <meta charset="utf-8" />
+    <title></title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+    <script>
+        $(document).ready(function () {
+
+            var baseURL = "https://alessioiannella-eval-test.apigee.net/comp-306-api/api";
+            //var baseURL = "http://localhost:17854/api";
+            //var baseURL = "https://assignment1-179919.appspot.com/api";
+
+            $("#buttonSearch").click(function () {
+                var searchValue = $("#inputSearch").val();
+
+                console.log("Search value: " + searchValue);
+
+                window.location.href = "searchResults.html?value=" + searchValue;
+            });
+
+            $("#buttonLogin").click(function () {
+
+                document.getElementById("errorLogin").innerHTML = "";
+
+                var username = $("#username").val();
+                var password = $("#password").val();
+
+                $.ajax({
+                    url: baseURL + '/users/login',
+                    type: 'post',
+                    contentType: 'application/json; charset=UTF-8',
+                    data: JSON.stringify({ "username": username, "password": password }),
+                    success: function (data, textStatus, jQxhr) {
+
+                        console.log(data);
+
+                        if (data.statusCode == 200) {
+                            console.log("Cookie received: " + data.headers[0].value[0]);
+
+                            var curCookie = "username" + "=" + parseReceivedCookie("username", data.headers[0].value[0]) +
+                                ", userID=" + parseReceivedCookie("userID", data.headers[0].value[0]) +
+                                ", sessionID=" + parseReceivedCookie("sessionID", data.headers[0].value[0]) +
+                                ", expires=" + parseReceivedCookie("expires", data.headers[0].value[0]) +
+                                ", path=" + parseReceivedCookie("path", data.headers[0].value[0]) +
+                                ", domain=" + parseReceivedCookie("domain", data.headers[0].value[0]);
+
+                            document.cookie = curCookie;
+                            console.log("Your Cookie : " + document.cookie);
+
+                            window.location.href = 'home.html';
+                        }
+                        else {
+                            document.getElementById("errorLogin").innerHTML = "Wrong username/password. Please try again";
+                        }
+                    },
+                    error: function (jqXhr, textStatus, errorThrown) {
+                        console.log(errorThrown);
+                        document.getElementById("errorLogin").innerHTML = "Unexpected error: please try again";
+                    }
+                });
+
+                
+
+
+            });
+
+            $.ajax({
+                url: baseURL + '/moods',
+                type: 'get',
+                contentType: 'application/json; charset=UTF-8',
+                success: function (data, textStatus, jQxhr) {
+
+                    console.log(data);
+
+                    for (var i = 0; i < data.length; i++) {
+                        var button = "<button class=\"dropdown-item\" onclick=\"searchMood(\'" + baseURL + "\', \'" + data[i].moodID + "\')\">" + data[i].name + "</button>";
+                        console.log(button);
+                        $("#moodsNav").append(button);
+                    }
+                },
+                error: function (jqXhr, textStatus, errorThrown) {
+                    console.log(errorThrown);
+                    console.log(jqXhr.responseJSON.error);
+                }
+            });
+        });
+
+        function searchMood(baseURL, moodID) {
+            console.log("Clicked mood " + moodID);
+
+            window.location.href = "moodsResults.html?moodID=" + moodID;
+        }
+
+        function parseReceivedCookie(cname, cookie) {
+            var name = cname + "=";
+            var value = ""
+            var cookieSections = cookie.split(';');
+            console.log("Cookie section: ", cookieSections);
+
+            for (var i = 0; i < cookieSections.length; i++) {
+                var section = cookieSections[i];
+                console.log("Analyzing section in cookie for name " + cname, section);
+                if (section.startsWith(" " + name)) {
+                    value = section.split("=")[1];
+                    console.log("Value for cookie " + cname + ": " + value);
+                    return value;
+                }
+            }
+
+            var sessionSections = cookieSections[0].split('&');
+            console.log("Session section: ", sessionSections);
+
+            for (var i = 0; i < sessionSections.length; i++) {
+                var section = sessionSections[i];
+
+                if (cname == "sessionID") {
+                    var sessionIDSection = section.split("=");
+                    console.log("Session ID section: ", sessionIDSection);
+                    value = sessionIDSection[2];
+                    console.log("Value for cookie " + cname + ": " + value);
+                    return value;
+                }
+                else {
+                    if (section.startsWith(name)) {
+                        value = section.split("=")[1];
+                        console.log("Value for cookie " + cname + ": " + value);
+                        return value;
+                    }
+                }
+  
+            }
+            return "";
+        }
+    </script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+        <a class="navbar-brand" href="#">BOOD</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="home.html">Home <span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="upload.html">Upload new Book <span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="http://example.com" id="dropdown01" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Moods</a>
+                    <div id="moodsNav" class="dropdown-menu" aria-labelledby="dropdown01">
+
+                    </div>
+                </li>
+                <li>
+                    <input id="inputSearch" class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
+                </li>
+                <li>
+                    <button id="buttonSearch" class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>=
+                </li>
+            </ul>
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">Sign in <span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="register.html">Register <span class="sr-only">(current)</span></a>
+                </li>
+            </ul>
+
+
+        </div>
+    </nav>
+
+    <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" class="form-control" id="username" placeholder="Enter username" required>
+    </div>
+    <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" class="form-control" id="password" placeholder="Enter password" required>
+    </div>
+    <p>
+        <button id="buttonLogin" class="btn btn-primary">Login</button>
+        <span id="errorLogin" style="color:red"></span>
+    </p>
+    
+
+
+</body>
+</html>
